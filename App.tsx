@@ -1,13 +1,16 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import * as THREE from 'three';
 import { Vector2D, Wall, WallMaterial, Radio, Device, Measurement, Intersection, DragObject } from './types';
 import { WALL_MATERIALS, CANVAS_WIDTH, CANVAS_HEIGHT, PIXELS_PER_METER } from './constants';
 import Sidebar, { SidebarSection, ControlGroup } from './components/Sidebar';
 import Slider from './components/Slider';
 
-// Declare THREE and cv to be available on the window object
-declare const window: any;
-declare const THREE: any;
-declare const cv: any;
+// Declare cv (OpenCV) on window object - loaded from CDN
+declare global {
+  interface Window {
+    cv: any; // OpenCV.js doesn't have official TypeScript definitions
+  }
+}
 
 // --- UTILITY FUNCTIONS ---
 const generateId = () => '_' + Math.random().toString(36).substr(2, 9);
@@ -29,7 +32,23 @@ const getMousePos = (e: React.MouseEvent<HTMLCanvasElement> | MouseEvent): Vecto
 const App: React.FC = () => {
     // --- STATE ---
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    const threeRef = useRef<any>({}); // To hold Three.js objects
+
+    interface ThreeRefs {
+        scene?: THREE.Scene;
+        camera?: THREE.OrthographicCamera;
+        renderer?: THREE.WebGLRenderer;
+        gridGroup?: THREE.Group;
+        wallsGroup?: THREE.Group;
+        radiosGroup?: THREE.Group;
+        deviceGroup?: THREE.Group;
+        circlesGroup?: THREE.Group;
+        estimatedGroup?: THREE.Group;
+        floorPlanGroup?: THREE.Group;
+        tempWallGroup?: THREE.Group;
+        interactiveObjects?: THREE.Object3D[];
+    }
+
+    const threeRef = useRef<ThreeRefs>({});
     const [opencvReady, setOpencvReady] = useState(false);
     
     // Simulation parameters
@@ -53,10 +72,16 @@ const App: React.FC = () => {
     // Interaction state
     const draggingRef = useRef<DragObject | null>(null);
     const [drawWallMode, setDrawWallMode] = useState(false);
-    const tempWallStartRef = useRef<any | null>(null);
+    const tempWallStartRef = useRef<Vector2D | null>(null);
 
     // Floor plan
-    const floorPlanRef = useRef<{ image: HTMLImageElement | null; texture: any; mesh: any; opacity: number; show: boolean }>({
+    const floorPlanRef = useRef<{
+        image: HTMLImageElement | null;
+        texture: THREE.Texture | null;
+        mesh: THREE.Mesh | null;
+        opacity: number;
+        show: boolean
+    }>({
         image: null,
         texture: null,
         mesh: null,
@@ -72,11 +97,19 @@ const App: React.FC = () => {
 
     // --- OPENCV LOADING ---
     useEffect(() => {
+        let attempts = 0;
+        const maxAttempts = 200; // 10 seconds max (200 * 50ms)
+
         const checkOpenCv = () => {
             if (window.cv) {
                 setOpencvReady(true);
             } else {
-                setTimeout(checkOpenCv, 50);
+                attempts++;
+                if (attempts < maxAttempts) {
+                    setTimeout(checkOpenCv, 50);
+                } else {
+                    console.error('OpenCV failed to load after 10 seconds. Wall detection will be unavailable.');
+                }
             }
         };
         checkOpenCv();
@@ -85,7 +118,7 @@ const App: React.FC = () => {
     // --- INITIALIZATION ---
     const initializeScene = useCallback(() => {
         const { current: canvas } = canvasRef;
-        if (!canvas || !window.THREE) return;
+        if (!canvas) return;
         
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x1a202c); // gray-900
@@ -178,11 +211,9 @@ const App: React.FC = () => {
 
     useEffect(() => {
         initializeScene();
-        initializeRadios(numRadios);
         resetWalls();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [initializeScene]);
-    
+    }, [initializeScene, resetWalls]);
+
     useEffect(() => {
         initializeRadios(numRadios);
     }, [numRadios, initializeRadios]);
@@ -379,7 +410,7 @@ const App: React.FC = () => {
                  const start = canvasToThree(tempWallStartRef.current.start);
                  const end = canvasToThree(currentMousePos);
                  const geo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(start.x, start.y, 4), new THREE.Vector3(end.x, end.y, 4)]);
-                 const mat = new THREE.LineDashedMaterial({ color: 0xfb923c, dashSize: 5, gapSize: 3, linewidth: 2 });
+                 const mat = new THREE.LineDashedMaterial({ color: 0xfb923c, dashSize: 5, gapSize: 3 });
                  const line = new THREE.Line(geo, mat);
                  line.computeLineDistances();
                  tempWallGroup.add(line);
