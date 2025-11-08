@@ -1,0 +1,5 @@
+{
+  "name": "Bluetooth Trilateration Simulator",
+  "description": "An interactive web-based Bluetooth Low Energy (BLE) trilateration simulator that demonstrates realistic indoor positioning using RSSI measurements, rendered with Three.js and featuring automatic wall detection with OpenCV.js.",
+  "requestFramePermissions": []
+}

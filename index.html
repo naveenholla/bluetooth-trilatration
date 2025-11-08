@@ -1,0 +1,52 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bluetooth Trilateration Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            overscroll-behavior: none;
+        }
+        .sidebar-left, .sidebar-right {
+            max-height: calc(100vh - 5rem);
+            overflow-y: auto;
+        }
+        /* Custom scrollbar for webkit browsers */
+        .sidebar-left::-webkit-scrollbar, .sidebar-right::-webkit-scrollbar {
+            width: 8px;
+        }
+        .sidebar-left::-webkit-scrollbar-track, .sidebar-right::-webkit-scrollbar-track {
+            background: #2d3748; /* gray-800 */
+        }
+        .sidebar-left::-webkit-scrollbar-thumb, .sidebar-right::-webkit-scrollbar-thumb {
+            background: #4a5568; /* gray-600 */
+            border-radius: 4px;
+        }
+        .sidebar-left::-webkit-scrollbar-thumb:hover, .sidebar-right::-webkit-scrollbar-thumb:hover {
+            background: #718096; /* gray-500 */
+        }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/"
+  }
+}
+</script>
+</head>
+<body class="bg-gray-900 text-gray-200 antialiased">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+    <script>
+      // Make THREE available globally for the app to use
+      window.THREE = THREE;
+    </script>
+    <script async src="https://docs.opencv.org/4.8.0/opencv.js"></script>
+</body>
+</html>
